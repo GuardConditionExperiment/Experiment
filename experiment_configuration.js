@@ -810,6 +810,12 @@ class Training_Execution_Forwarder extends _Experimentation_Forwarder_js__WEBPAC
                 .do((i) => {
                 this.print_cancel_text();
             }),
+            (0,_Automata_Transitions_js__WEBPACK_IMPORTED_MODULE_1__.from)(SHOW_PRE_TASK_INFO).to(ESCAPED)
+                .on("Escape")
+                .if(() => this.training_configuration.can_be_cancelled)
+                .do((i) => {
+                this.print_cancel_text();
+            }),
             (0,_Automata_Transitions_js__WEBPACK_IMPORTED_MODULE_1__.from)(TASK_FINISHED).to(ESCAPED)
                 .on("Escape")
                 .if(() => this.current_page_index < this.experiment_definition.tasks.length - 1 && this.training_configuration.can_be_cancelled)
@@ -1237,6 +1243,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   random_array_element_and_remove: () => (/* binding */ random_array_element_and_remove),
 /* harmony export */   random_array_element_without: () => (/* binding */ random_array_element_without),
 /* harmony export */   random_array_elements_without_repetitions: () => (/* binding */ random_array_elements_without_repetitions),
+/* harmony export */   random_bool: () => (/* binding */ random_bool),
+/* harmony export */   random_integer_up_to: () => (/* binding */ random_integer_up_to),
 /* harmony export */   random_integer_up_to_excluding: () => (/* binding */ random_integer_up_to_excluding),
 /* harmony export */   random_lower_case_letter: () => (/* binding */ random_lower_case_letter),
 /* harmony export */   random_lower_case_letter_except: () => (/* binding */ random_lower_case_letter_except),
@@ -1494,6 +1502,12 @@ const Random = new _Random();
 function SET_SEED(seed) {
     Random.set_seed(seed);
 }
+function random_bool() {
+    return random_integer_up_to(1) == 0;
+}
+function random_integer_up_to(upper_limit) {
+    return random_integer_up_to_excluding(upper_limit + 1);
+}
 function random_integer_up_to_excluding(upper_limit) {
     return Random.new_random_integer(upper_limit);
 }
@@ -1646,6 +1660,20 @@ class Task {
             if (treatment.variable.name === treatment_name)
                 return treatment.value;
         throw "Unknown treatment: " + treatment_name;
+    }
+    treatment_index_value(variable) {
+        for (let treatment of this.treatment_combination.treatment_combination) {
+            let counter = 0;
+            if (treatment.variable.name === variable) {
+                for (let t of treatment.variable.treatments) {
+                    if (t.value == treatment.value)
+                        return counter;
+                    else
+                        counter++;
+                }
+            }
+        }
+        throw "unknown variable";
     }
     set_computed_variable_value(variable_name, value) {
         for (let treatment of this.treatment_combination.treatment_combination)
@@ -2108,6 +2136,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   all_array_combinations: () => (/* binding */ all_array_combinations),
 /* harmony export */   all_different_x_tupel: () => (/* binding */ all_different_x_tupel),
+/* harmony export */   all_different_x_tupel_sets: () => (/* binding */ all_different_x_tupel_sets),
 /* harmony export */   all_x_tupel: () => (/* binding */ all_x_tupel)
 /* harmony export */ });
 function all_array_combinations_internal(arr, combination, f) {
@@ -2174,6 +2203,29 @@ function all_different_x_tupel(tupel_length, arr) {
             result.push([arr[e], ...a_x_minux_one_tupel]);
         }
     }
+    return result;
+}
+/**
+ * Examples:
+ *   all_x_tupel(2, [1, 2, 3]) = [[1], [1,2]], [1,3], [2,3]]
+
+ Sorry to say this.....but this was GPT generated....
+
+ */
+function all_different_x_tupel_sets(tupel_length, arr) {
+    const result = [];
+    function backtrack(start, path) {
+        if (path.length === tupel_length) {
+            result.push([...path]);
+            return;
+        }
+        for (let i = start; i < arr.length; i++) {
+            path.push(arr[i]);
+            backtrack(i + 1, path);
+            path.pop();
+        }
+    }
+    backtrack(0, []);
     return result;
 }
 //# sourceMappingURL=all_array_combinations.js.map
@@ -2889,7 +2941,8 @@ let experiment_configuration_function = (writer) => {
             t.do_print_after_task_information = () => {
                 writer.clear_stage();
                 if (t.expected_answer == t.given_answer) {
-                    writer.print_html_on_stage("<p>\"The answer was correct. Please press [Enter] to continue\"<\p>");
+                    writer.print_html_on_stage("<p><span style=\"color:Green;\">\"The answer was correct.\"</span><br> " +
+                        "<br>In case you feel unfocused, you may take a short break.<br>Please press [Enter] to continue<\p>");
                 }
                 else {
                     writer.print_html_on_stage("<p><span style=\"color:Red;\">\ The answer \"" + t.given_answer + "\" was incorrect. </span><\p>" +
